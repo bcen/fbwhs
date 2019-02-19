@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/r3labs/sse"
 	"gopkg.in/macaron.v1"
 )
 
-func handleFacebook(ctx *macaron.Context) bool {
+func handleFacebookVerification(ctx *macaron.Context) bool {
 	modes := ctx.QueryStrings("hub.mode")
 	if len(modes) != 1 || modes[0] != "subscribe" {
 		return false
@@ -32,28 +33,39 @@ func handleFacebook(ctx *macaron.Context) bool {
 	return true
 }
 
-func handleWebhookConnect(ctx *macaron.Context) {
-	if handled := handleFacebook(ctx); handled {
+func handleWebhookConnect(ctx *macaron.Context, events *sse.Server) {
+	if handled := handleFacebookVerification(ctx); handled {
 		return
 	}
+
 	channel := ctx.Params(":channel")
+	if !events.StreamExists(channel) {
+		events.CreateStream(channel)
+	}
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+			events.Publish(channel, &sse.Event{
+				Data: []byte("ping"),
+			})
+		}
+	}()
 	ctx.Redirect(fmt.Sprintf("/events?stream=%s", channel))
 }
 
 func handleWebhookForward(ctx *macaron.Context, events *sse.Server) {
 	events.Publish(ctx.Params(":channel"), &sse.Event{
-		Data: []byte("ping"),
+		Data: []byte("forwarding message"),
 	})
 	ctx.Status(200)
 }
 
 func main() {
-	e := sse.New()
-	e.AutoStream = true
-	e.AutoReplay = false
+	events := sse.New()
+	events.AutoReplay = false
 
 	m := macaron.Classic()
-	m.Map(e)
+	m.Map(events)
 	m.Use(macaron.Renderer())
 	m.Get("/webhook/:channel", handleWebhookConnect)
 	m.Post("/webhook/:channel", handleWebhookForward)
@@ -62,6 +74,6 @@ func main() {
 	addr := host + ":" + strconv.Itoa(port)
 	mux := http.NewServeMux()
 	mux.Handle("/", m)
-	mux.HandleFunc("/events", e.HTTPHandler)
+	mux.HandleFunc("/events", events.HTTPHandler)
 	fmt.Println(http.ListenAndServe(addr, mux))
 }
