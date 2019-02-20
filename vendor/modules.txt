@@ -11,6 +11,8 @@ github.com/go-macaron/inject
 github.com/r3labs/sse
 # github.com/rs/xid v1.2.1
 github.com/rs/xid
+# github.com/segmentio/ksuid v1.0.2
+github.com/segmentio/ksuid
 # golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67
 golang.org/x/crypto/pbkdf2
 # golang.org/x/net v0.0.0-20190213061140-3a22650c66bd

@@ -6,6 +6,7 @@ require (
 	github.com/go-macaron/inject v0.0.0-20160627170012-d8a0b8677191 // indirect
 	github.com/r3labs/sse v0.0.0-20181217150409-243b7807c4c4
 	github.com/rs/xid v1.2.1 // indirect
+	github.com/segmentio/ksuid v1.0.2
 	golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67 // indirect
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd // indirect
 	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
