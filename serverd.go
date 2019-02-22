@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -110,8 +111,12 @@ func handleWebhookConnect(ctx *macaron.Context, events broker.Broker, w *Webhook
 				sse.NewEvent("ping", []byte("ping")),
 			)
 			if err != nil {
-				fmt.Println("Disconnected")
 				w.Unsubscribe(eventID)
+				log.Printf(
+					"Disconnected, eventID: %s, webhookID: %s, %d consumers"+
+						" left\n",
+					eventID, wid, len(w.EventIDs(wid)),
+				)
 				break
 			}
 		}
@@ -170,5 +175,5 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/", m)
 	mux.HandleFunc("/events", handleEvents(wh, events))
-	fmt.Println(http.ListenAndServe(addr, mux))
+	log.Fatal(http.ListenAndServe(addr, mux))
 }
