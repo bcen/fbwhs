@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,7 +15,17 @@ import (
 	"gopkg.in/macaron.v1"
 )
 
-const TheOHSHITLimit = 100
+const (
+	PingDelay          = 30 * time.Second
+	SSEBrokerTimeout   = 10 * time.Second
+	SSEBrokerTolerance = 3
+	TheOHSHITLimit     = 500
+)
+
+type WebhookForwardResponse struct {
+	Header http.Header `json:"header"`
+	Body   string      `json:"body"`
+}
 
 type WebhookHandler struct {
 	sync.Mutex
@@ -33,6 +44,7 @@ func (w *WebhookHandler) Subscribe(webhookID string) (string, error) {
 	w.Lock()
 	defer w.Unlock()
 	if len(w.eventIDLookup) >= TheOHSHITLimit {
+		log.Printf("Exceeded TheOHSHITLimit: %d", TheOHSHITLimit)
 		return "", fmt.Errorf("🤷")
 	}
 
@@ -105,7 +117,7 @@ func handleWebhookConnect(ctx *macaron.Context, events broker.Broker, w *Webhook
 
 	go func() {
 		for {
-			time.Sleep(30 * time.Second)
+			time.Sleep(PingDelay)
 			err := events.BroadcastTo(
 				eventID,
 				sse.NewEvent("ping", []byte("ping")),
@@ -113,7 +125,7 @@ func handleWebhookConnect(ctx *macaron.Context, events broker.Broker, w *Webhook
 			if err != nil {
 				w.Unsubscribe(eventID)
 				log.Printf(
-					"Disconnected, eventID: %s, webhookID: %s, %d consumers"+
+					"Disconnected, eventID: %s, webhookID: %s, %d consumer(s)"+
 						" left\n",
 					eventID, wid, len(w.EventIDs(wid)),
 				)
@@ -133,12 +145,16 @@ func handleWebhookForward(ctx *macaron.Context, events broker.Broker, w *Webhook
 		return
 	}
 
-	body, _ := ctx.Req.Body().Bytes()
+	body, _ := ctx.Req.Body().String()
+	resp := WebhookForwardResponse{Header: ctx.Req.Header, Body: body}
+	b, err := json.Marshal(resp)
+	if err != nil {
+		ctx.PlainText(http.StatusBadRequest, []byte(err.Error()))
+		return
+	}
+
 	for _, eventID := range eventIDs {
-		events.BroadcastTo(
-			eventID,
-			sse.NewEvent("webhook", body),
-		)
+		events.BroadcastTo(eventID, sse.NewEvent("webhook", b))
 	}
 
 	ctx.Status(http.StatusOK)
@@ -158,9 +174,8 @@ func handleEvents(wh *WebhookHandler, events broker.Broker) http.HandlerFunc {
 func main() {
 	wh := NewWebhookHandler()
 	events := sse.NewBroker(sse.Config{
-		Timeout:      10 * time.Second,
-		Tolerance:    3,
-		ErrorHandler: nil,
+		Timeout:   SSEBrokerTimeout,
+		Tolerance: SSEBrokerTolerance,
 	})
 
 	m := macaron.Classic()
