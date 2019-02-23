@@ -33,3 +33,8 @@
 ## How it works
 
 tldr; The concept is same as [smee](https://smee.io/), but we handle Facebook's [verification request](https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests) for you.
+
+## Deploying to Heroku
+
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)

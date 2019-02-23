@@ -1,0 +1,6 @@
+{
+  "name": "fbwhs",
+  "description": "Facebook Webhook as a Service",
+  "repository": "https://github.com/bcen/fbwhs",
+  "image": "heroku/go"
+}
