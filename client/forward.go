@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"fbwhs/internal"
 	"github.com/r3labs/sse"
 	"github.com/segmentio/ksuid"
 )
@@ -30,11 +31,6 @@ func init() {
 	flag.StringVar(&src, "s", "", "Webhook SSE source")
 }
 
-type WebhookRequest struct {
-	Header http.Header
-	Body   string
-}
-
 func forwardEvent(msg *sse.Event, client *http.Client, dest string) {
 	var req *http.Request
 	eventType := string(msg.Event)
@@ -49,16 +45,16 @@ func forwardEvent(msg *sse.Event, client *http.Client, dest string) {
 
 	fmt.Println("Forwarding event:")
 
-	var wr WebhookRequest
-	err := json.Unmarshal(msg.Data, &wr)
+	var w internal.Webhook
+	err := json.Unmarshal(msg.Data, &w)
 	if err != nil {
 		fmt.Printf("Unable to decode json, error: %s\n", err.Error())
 		return
 	}
-	fmt.Println(wr)
+	fmt.Println(w)
 
-	req, _ = http.NewRequest("POST", dest, bytes.NewBufferString(wr.Body))
-	req.Header = wr.Header
+	req, _ = http.NewRequest("POST", dest, bytes.NewBufferString(w.Body))
+	req.Header = w.Header
 	resp, err := client.Do(req)
 
 	if err != nil {
