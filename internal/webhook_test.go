@@ -88,7 +88,9 @@ func TestForward(t *testing.T) {
 	wh := internal.NewWebhookHandler(b)
 	wid := "abc123"
 	wh.Subscribe(wid)
-	wh.Forward(wid, nil, "a body")
+	if wh.Forward(wid, nil, "a body") != nil {
+		t.Fail()
+	}
 
 	w := internal.Webhook{Header: nil, Body: "a body"}
 	jsonBody, _ := json.Marshal(w)

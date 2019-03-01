@@ -54,6 +54,7 @@ func handleWebhookForward(ctx *macaron.Context, wh *internal.WebhookHandler) {
 	body, _ := ctx.Req.Body().String()
 
 	if err := wh.Forward(wid, ctx.Req.Header, body); err != nil {
+		log.Printf("Forward error: %s", err.Error())
 		ctx.PlainText(http.StatusBadRequest, []byte(err.Error()))
 		return
 	}

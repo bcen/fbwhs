@@ -117,8 +117,8 @@ func (wh *WebhookHandler) KeepAlive(eventID string) {
 			wid := wh.eventIDLookup[eventID]
 			wh.Unsubscribe(eventID)
 			log.Printf(
-				"Disconnected, eventID: %s, %d consumer(s) left",
-				eventID, len(wh.subscriptions[wid]),
+				"Disconnected, eventID: %s, %d consumer(s) left on webhook: %s",
+				eventID, len(wh.subscriptions[wid]), wid,
 			)
 			break
 		}
